@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · FutsalHub Nepal{% endblock %}
+{% block content %}
+<main class="dashboard-page">
+  <div class="container">
+    <section class="dashboard-welcome">
+      <div>
+        <p class="eyebrow">PLAYER DASHBOARD</p>
+        <h1>Good morning, {{ current_user.name.split()[0] }} <span class="wave">👋</span></h1>
+        <p class="muted">Find your next game, keep up with the community and play more.</p>
+      </div>
+      <a class="button" href="{{ url_for('main.index') }}">＋ Book a futsal</a>
+    </section>
+    {% if notifications %}<section class="notification-strip"><strong>New notifications</strong>{% for notification in notifications %}<div><span>{{ notification.title }} — {{ notification.message }}</span><form method="post" action="{{ url_for('main.mark_notification_read', notification_id=notification.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">Mark read</button></form></div>{% endfor %}</section>{% endif %}
+
+    <section class="dashboard-tools">
+      <form class="dashboard-search" method="get" action="{{ url_for('main.dashboard') }}">
+        <span>⌕</span>
+        <input name="q" value="{{ filters.q }}" placeholder="Search futsals by name or location" aria-label="Search futsals">
+        <button class="button" type="submit">Search</button>
+      </form>
+      <form class="dashboard-filters" method="get" action="{{ url_for('main.dashboard') }}">
+        <input name="q" value="{{ filters.q }}" type="hidden">
+        <label>Area
+          <select name="area">
+            <option value="">All areas</option>
+            <option value="Kathmandu" {% if filters.area == "Kathmandu" %}selected{% endif %}>Kathmandu</option>
+            <option value="Lalitpur" {% if filters.area == "Lalitpur" %}selected{% endif %}>Lalitpur</option>
+            <option value="Bhaktapur" {% if filters.area == "Bhaktapur" %}selected{% endif %}>Bhaktapur</option>
+          </select>
+        </label>
+        <label>Distance
+          <select name="distance">
+            <option value="">Any distance</option>
+            <option value="3" {% if filters.distance == "3" %}selected{% endif %}>Under 3 km</option>
+            <option value="5" {% if filters.distance == "5" %}selected{% endif %}>Under 5 km</option>
+            <option value="10" {% if filters.distance == "10" %}selected{% endif %}>Under 10 km</option>
+          </select>
+        </label>
+        <button class="filter-button" type="submit">Filter</button>
+      </form>
+    </section>
+
+    <section class="dashboard-section">
+      <div class="dashboard-section-heading"><div><p class="eyebrow">NEARBY FUTSALS</p><h2>Find your pitch</h2></div><a class="text-link" href="{{ url_for('main.index') }}">View map →</a></div>
+      <div class="dashboard-venue-grid">
+        {% for venue in venues %}
+        <article class="dashboard-venue-card">
+          <a href="{{ url_for('main.venue_detail', slug=venue.slug) }}">
+            <div class="dashboard-venue-image"><img src="{{ venue.image_url }}" alt="{{ venue.name }}"><span class="venue-status {% if not venue.is_open %}closed{% endif %}">● {% if venue.is_open %}Open{% else %}Closed{% endif %}</span></div>
+            <div class="dashboard-venue-content">
+              <div class="venue-title-row"><h3>{{ venue.name }}</h3><span class="rating">★ {{ venue.rating }}</span></div>
+              <p class="muted">⌖ {{ venue.location }} <span class="distance">· {{ "%.1f"|format(venue.distance_km) }} km</span></p>
+              <div class="dashboard-venue-footer"><strong>रु {{ "{:,}".format(venue.price_per_hour) }}<small>/hr</small></strong>{% if venue.is_open and venue.available_slots %}<span class="slots">{{ venue.available_slots }} slots available</span>{% else %}<span class="slots unavailable">No slots today</span>{% endif %}</div>
+            </div>
+          </a>
+        </article>
+        {% else %}<div class="empty-card"><h3>No futsals found</h3><p class="muted">Try widening your search or distance filter.</p></div>{% endfor %}
+      </div>
+    </section>
+
+    <div class="dashboard-columns">
+      <section class="dashboard-panel">
+        <div class="dashboard-section-heading"><div><p class="eyebrow">YOUR GAME PLAN</p><h2>Upcoming bookings</h2></div><a class="text-link" href="{{ url_for('main.dashboard') }}">See all</a></div>
+        {% for booking in bookings %}
+        <article class="upcoming-booking"><div class="date-tile"><strong>{{ booking.booking_date.strftime('%d') }}</strong><span>{{ booking.booking_date.strftime('%b') }}</span></div><div class="booking-info"><h3>{{ booking.venue.name }}</h3><p class="muted">{{ booking.booking_reference }} · ⌖ {{ booking.venue.location }} · {{ booking.start_time }} · {{ booking.duration }} hour{% if booking.duration > 1 %}s{% endif %}</p></div><div class="booking-total"><span class="status">● {{ booking.status|capitalize }}</span><strong>रु {{ "{:,}".format(booking.total_price) }}</strong>{% if booking.status not in ["cancelled","completed"] %}<form method="post" action="{{ url_for('main.cancel_booking', booking_reference=booking.booking_reference) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="cancel-link" type="submit">Cancel</button></form>{% endif %}</div></article>
+        {% else %}<div class="small-empty"><p class="muted">No upcoming games yet.</p><a class="text-link" href="{{ url_for('main.index') }}">Book your first pitch →</a></div>{% endfor %}
+      </section>
+      <section class="dashboard-panel">
+        <div class="dashboard-section-heading"><div><p class="eyebrow">COMPETE TOGETHER</p><h2>Upcoming tournaments</h2></div><a class="text-link" href="{{ url_for('main.index') }}">Explore</a></div>
+        {% for tournament in tournaments %}<article class="tournament-row"><div class="tournament-icon">⚽</div><div><h3>{{ tournament.name }}</h3><p class="muted">{{ tournament.tournament_date.strftime('%d %b %Y') }} · {{ tournament.venue_name }}</p><small>{{ tournament.prize }} · {{ tournament.team_limit }} teams</small></div><span class="tournament-status">{{ tournament.status }}</span></article>{% else %}<div class="small-empty"><p class="muted">No upcoming tournaments.</p></div>{% endfor %}
+      </section>
+    </div>
+    <section class="dashboard-panel booking-history-panel"><div class="dashboard-section-heading"><div><p class="eyebrow">YOUR RECORD</p><h2>Booking history</h2></div><a class="text-link" href="{{ url_for('main.receipt_scan') }}">Scan a receipt</a></div><div class="history-table">{% for booking in booking_history %}<div class="history-row"><span class="booking-reference">{{ booking.booking_reference }}</span><strong>{{ booking.venue.name }}</strong><span>{{ booking.booking_date.strftime('%d %b %Y') }} · {{ booking.start_time }}</span><span>रु {{ "{:,}".format(booking.total_price) }}</span><span class="status">{{ booking.status|capitalize }}</span></div>{% else %}<p class="muted">No booking history yet.</p>{% endfor %}</div></section>
+
+    <section class="announcement-panel"><div class="dashboard-section-heading"><div><p class="eyebrow">FROM THE COMMUNITY</p><h2>Announcements</h2></div></div><div class="announcement-grid">{% for announcement in announcements %}<article><span>{{ announcement.category }}</span><h3>{{ announcement.title }}</h3><p class="muted">{{ announcement.body }}</p><small>{{ announcement.published_at.strftime('%d %b %Y') }}</small></article>{% endfor %}</div></section>
+  </div>
+</main>
+{% endblock %}

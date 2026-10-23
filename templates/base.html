@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Discover and book the best futsal venues across Nepal.">
+  <title>{% block title %}FutsalHub Nepal{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container nav-inner">
+      <a class="brand" href="{{ url_for('main.index') }}"><span class="brand-mark">F</span><span>Futsal<span class="brand-light">Hub</span><small>NEPAL</small></span></a>
+      <div class="nav-links">
+        <a href="{{ url_for('main.search') }}">Explore venues</a><a href="{{ url_for('main.tournaments') }}">Tournaments</a><a href="{{ url_for('main.announcements') }}">News</a>
+        {% if current_user %}<a href="{{ url_for('main.dashboard') }}">My bookings</a><a href="{{ url_for('main.announcements') }}">Notifications</a><a href="{{ url_for('auth.profile') }}">Profile</a>{% if current_user.is_owner or current_user.is_admin %}<a href="{{ url_for('main.owner_dashboard') }}">Owner</a>{% endif %}{% if current_user.is_admin %}<a href="{{ url_for('main.admin_dashboard') }}">Admin</a>{% endif %}<a class="nav-user" href="{{ url_for('auth.profile') }}">{{ current_user.name[0]|upper }}</a><form class="logout-form" method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">Log out</button></form>{% else %}<a href="{{ url_for('auth.login') }}">Log in</a><a class="button button-small" href="{{ url_for('auth.register') }}">Get started</a>{% endif %}
+      </div>
+      <button class="menu-toggle" aria-label="Toggle navigation">☰</button>
+    </div>
+  </nav>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}<div class="flash-wrap">{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}<button onclick="this.parentElement.remove()" aria-label="Dismiss">×</button></div>{% endfor %}</div>{% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+  <footer class="footer"><div class="container footer-grid"><div><a class="brand brand-footer" href="{{ url_for('main.index') }}"><span class="brand-mark">F</span><span>Futsal<span class="brand-light">Hub</span><small>NEPAL</small></span></a><p>Find your next game. Book your perfect pitch.</p></div><div><strong>Explore</strong><a href="{{ url_for('main.index') }}">All venues</a><a href="{{ url_for('main.index') }}#how-it-works">How it works</a></div><div><strong>Support</strong><a href="mailto:hello@futsalhub.np">hello@futsalhub.np</a><span>Made for the love of the game.</span></div></div><div class="container copyright">© 2025 FutsalHub Nepal · Play more, worry less.</div></footer>
+  <script>window.mapConfig = {{ {"tileUrl": config.get("MAP_TILE_URL", "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"), "attribution": config.get("MAP_ATTRIBUTION", '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>')}|tojson }};</script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
